@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  superset_api_db:
+    image: postgres:15
+    container_name: superset-api-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - data_tool_internal
+    ports:
+      - 5432:5432
+volumes:
+  db_data:
+    external: false
+networks:
+  data_tool_internal:
