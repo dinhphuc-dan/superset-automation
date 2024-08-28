@@ -13,14 +13,14 @@ from functools import lru_cache
 import time
 
 load_dotenv(override=True)
-app_related_role = ['mkt', 'all_users']
-performance_related_role = ['mkt']
 
 @lru_cache()
 def handle_user_input(fuction_type, company_name):   
     '''
     return necessary info for superset based on input
     '''
+    app_related_role = ['mkt', 'all_users']
+    performance_related_role = ['mkt']
 
     if fuction_type == 'app_related_role':
         company_name = company_name
