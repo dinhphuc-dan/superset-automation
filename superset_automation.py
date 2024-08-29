@@ -792,16 +792,14 @@ if __name__ == '__main__':
 
         bg = Bigquery()
         list_object = bg.get_object_from_bigquery(query=query, start_date=start_date)
-        # for i in list_object:
-        #     print(i)
 
-        session = Superset(
-            base_url= os.getenv('SUPERSET_BASE_URL'),
-            username = os.getenv('SUPERSET_USERNAME'),
-            password = os.getenv('SUPERSET_PASSWORD') 
-        )
-        # session.create_role(list_object = list_object, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
-        # session.update_table_all_row_level_security(tables_schema=row_level_security_id_query_condition, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
-        # session.delete_roles()
-        session.update_users_app_permission(objects = list_object, company_name = company_name)
+    session = Superset(
+        base_url= os.getenv('SUPERSET_BASE_URL'),
+        username = os.getenv('SUPERSET_USERNAME'),
+        password = os.getenv('SUPERSET_PASSWORD') 
+    )
+    # session.create_role(list_object = list_object, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
+    # session.update_table_all_row_level_security(tables_schema=row_level_security_id_query_condition, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
+    session.delete_roles()
+    # session.update_users_app_permission(objects = list_object, company_name = company_name)
         
