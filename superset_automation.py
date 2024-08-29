@@ -374,7 +374,7 @@ class Superset():
         k = self._query_postgres(query, return_type=None)
         df = pd.DataFrame(response)
         df.to_sql(table_name, con=self.engine, if_exists='append', index=False)
-        print('Clone Complete')
+        print('Clone Complete \\n')
         
     def _parse_response(self, table, response) -> Generator:
         for row in response.json()['result']:
@@ -410,16 +410,16 @@ class Superset():
             query = f"select count(*) from {table['table_name']}"
             row_count_postgres = self._query_postgres(query, return_type='scalar')
             
-            print(f'Running check data between superset and postgres for table {table["table_name"]}')
+            print(f'Running check data between superset and postgres for table {table["table_name"]} \\n')
             if table['id'] == 2 or table['id'] == 5:
-                print(f'Cloning data from superset to postgres {table["table_name"]}')
+                print(f'Cloning data from superset to postgres {table["table_name"]} \\n')
                 records = self._get_record(
                     parse_function = self._parse_response,
                     table = table
                 )
                 self._to_postgres(response=records, table_name=table['table_name'])
             elif response.json()['count'] != row_count_postgres:
-                print(f'Cloning data from superset to postgres {table["table_name"]}')
+                print(f'Cloning data from superset to postgres {table["table_name"]} \\n')
                 records = self._get_record(
                     parse_function = self._parse_response,
                     table = table
@@ -497,7 +497,7 @@ class Superset():
                             json={"name":  role_name}
                         )
                     if self._handle_response_status_code(response = response):
-                        print(f'Create role {role_name} successfully')
+                        print(f'Create role {role_name} successfully \\n')
                         # add permission_view_id to role
                         role_id = response.json()['id']                        
                         permission_view_menu_ids = dataset['permission_view_id']
@@ -524,7 +524,7 @@ class Superset():
                             json={'permission_view_menu_ids': [permission_view_menu_ids]}
                         )
         if self._handle_response_status_code(response = response):
-            print(f'Update role permission {role_name} successfully')
+            print(f'Update role permission {role_name} successfully \\n')
     
     def _create_row_level_security(self, object):
         # check role exist
@@ -549,7 +549,7 @@ class Superset():
                                 },
                             )
             if self._handle_response_status_code(response = response):
-                print(f'Create role level security {object["role_level_security_name"]} successfully')
+                print(f'Create role level security {object["role_level_security_name"]} successfully \\n')
                 time.sleep(1.5)
     
     def update_table_all_row_level_security(self, tables_schema, list_dataset, table_id_query_condition):
@@ -592,7 +592,7 @@ class Superset():
                             }
                         )
         if self._handle_response_status_code(response = response):
-            print(f'Update role level security {new_name} successfully')
+            print(f'Update role level security {new_name} successfully \\n')
     
     def _update_roles_name(self, company_name):
         self._check_data_between_superset_and_postgres()
@@ -604,7 +604,6 @@ class Superset():
             
         roles = self._query_postgres(query, return_type='dict')
         for role in roles:
-            print(role['name'])
             role_name = role['name'].split('_')
             role_id = role['id']
             if role_name[1].lower() == 'mkt':
@@ -644,7 +643,7 @@ class Superset():
                             }
                         )
         if self._handle_response_status_code(response = response):
-            print(f'Update role name {role_name} successfully')
+            print(f'Update role name {role_name} successfully \\n')
     
     def _delete_object(self, object_id, object_name, path):
 
@@ -658,7 +657,7 @@ class Superset():
                             cookies=cookies
                         )
         if self._handle_response_status_code(response = response):
-            print(f'Delete {object_name} successfully')
+            print(f'Delete {object_name} successfully \\n')
 
     def delete_roles(self):
         path = 'security/roles/'
@@ -698,7 +697,7 @@ class Superset():
                             }
                         )
         if self._handle_response_status_code(response = response):
-            print(f'Update {user_name} successfully')
+            print(f'Update {user_name} successfully \\n')
     def update_users_app_permission(self, objects, company_name):
         list_object = [object for object in objects]
 
