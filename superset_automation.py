@@ -27,7 +27,7 @@ def handle_user_input(fuction_type, company_name):
         bigquery_table_env = f'{company_name.upper()}_APP_TABLE_ID'
         bigquery_table_id = os.getenv(bigquery_table_env)
         if company_name.lower() == 'govo':
-            bigquery_query = (
+            bigquery_object_query = (
                     f" SELECT " 
                         f" concat(app_name, '_', lower(platform)) as object_name, " 
                         f" 'app' as group_key, " 
@@ -37,7 +37,7 @@ def handle_user_input(fuction_type, company_name):
                     f" WHERE end_date is null "
             )
         else:
-            bigquery_query = (
+            bigquery_object_query = (
                     f" SELECT " 
                         f" concat(app_name, '_', lower(platform)) as object_name, " 
                         f" 'app' as group_key, " 
@@ -52,16 +52,16 @@ def handle_user_input(fuction_type, company_name):
         
     elif fuction_type == 'mkt_performance_related_role':
         company_name = 'volio'
-        bigquery_table_env = 'VOLIO_MKT'
+        bigquery_table_env = 'VOLIO_MKT_LEVEL_TABLE_ID'
         bigquery_table_id = os.getenv(bigquery_table_env)
-        bigquery_query = (
+        bigquery_object_query = (
                 f" SELECT "
                     f" distinct marketer_name as object_name, "
                     f" 'mkt' as group_key, " 
                     f" concat('marketer_name = \\'', marketer_name, '\\'') as clause, " 
                     f" concat('auto_{company_name.upper()}_MKT_', marketer_name) as role_level_security_name, "
                 f" FROM `{bigquery_table_id}` "
-                f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory')"
+                f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory', 'anhbqt')"
         )
         list_dataset =[company_name + '_' + i + '_performance' for i in performance_related_role]
         table_id_query_condition = "table_name not in ('volio_marketer_commisison_table', 'volio_ranking_marketer_performance', 'volio_app_of_marketer_all_companies')"
@@ -72,24 +72,24 @@ def handle_user_input(fuction_type, company_name):
         bigquery_table_env = f'{company_name.upper()}_APP_MKT_TABLE_ID'
         bigquery_table_id = os.getenv(bigquery_table_env)
         if company_name.lower() == 'govo':
-            bigquery_query = (
+            bigquery_object_query = (
                     f" SELECT " 
                         f" app_name, " 
                         f" 'Android' as platform, " 
                         f" marketer_name, " 
                         f" \'{company_name.lower()}\' as company_name, "
                     f" FROM `{bigquery_table_id}` "
-                    f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory')"
+                    f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory', 'anhbqt')"
             )
         else:
-            bigquery_query = (
+            bigquery_object_query = (
                     f" SELECT " 
                         f" app_name, " 
                         f" platform, " 
                         f" marketer_name, " 
                         f" \'{company_name.lower()}\' as company_name, "
                     f" FROM `{bigquery_table_id}` "
-                    f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory') "
+                    f" WHERE end_date is null and marketer_name not in ('vuonglt', 'InInventory', 'anhbqt')"
             )
         list_dataset =None
         table_id_query_condition = None
@@ -97,7 +97,7 @@ def handle_user_input(fuction_type, company_name):
     elif fuction_type == 'update_permission_mkt_mkt':
         pass
 
-    return bigquery_query, list_dataset, row_level_security_id_query_condition, table_id_query_condition, company_name
+    return bigquery_object_query, list_dataset, row_level_security_id_query_condition, table_id_query_condition, company_name
 
 
 class Superset():
@@ -683,7 +683,7 @@ class Superset():
             self._delete_object(object_id= object['id'], object_name= object['name'], path=path)
             time.sleep(1.5)
     
-    def _update_user_role(self, user_id, user_name ,role_id):
+    def _update_user_role(self, user_id, user_name ,role_id, user_password):
         path = f'security/users/{user_id}'
         request_method = 'PUT'
         headers, cookies = self._prepare_authorization_header()
@@ -693,12 +693,14 @@ class Superset():
                             headers=headers,
                             cookies=cookies,
                             json={
-                                "roles": role_id
-                            }
+                                "roles": role_id,
+                                "password": user_password
+                            },
+                            
                         )
         if self._handle_response_status_code(response = response):
             print(f'Update {user_name} successfully \\n')
-    def update_users_app_permission(self, objects, company_name):
+    def update_users_app_permission(self, objects, company_name, bigquery_connection):
         list_object = [object for object in objects]
 
         # getting new_role_id for each users
@@ -742,8 +744,17 @@ class Superset():
             for j in list_mkt_and_new_role_id_distinct:
                 if i['marketer_name'] == j['marketer_name']:
                     list_final_role_id = j['new_role_id'] + i['old_role_id_remain']
+                    # get user password
+                    user_password_table_id = os.getenv('VOLIO_MKT_PASSWORD_TABLE_ID')
+                    user_password_query = (
+                            f" SELECT " 
+                            f" password, " 
+                            f" FROM `{user_password_table_id}` "
+                          f" WHERE marketer_name in (\'{i['marketer_name']}\')"
+                    )
+                    user_password  = next(i for i in bigquery_connection.get_object_from_bigquery(query=user_password_query, start_date=None)).get('password')
                     # update users role
-                    self._update_user_role(user_id = i['user_id'], user_name = i['marketer_name'], role_id = list_final_role_id)
+                    self._update_user_role(user_id = i['user_id'], user_name = i['marketer_name'], role_id = list_final_role_id, user_password= user_password)
 
     def update_users_mkt_leader_permission(self, object):
         pass
@@ -772,10 +783,13 @@ class Bigquery():
         if start_date: where_condition = f' and cast(start_date as DATE) >= cast("{start_date}" as DATE)'
         else: where_condition = ''
 
-        final_query = query + f" {where_condition} "
-        table = self.bqclient.query_and_wait(query=final_query).to_arrow()
-        list_object = table.to_pylist()
-        yield from list_object
+        if query: 
+            final_query = query + f" {where_condition} "
+            table = self.bqclient.query_and_wait(query=final_query).to_arrow()
+            list_object = table.to_pylist()
+            yield from list_object
+        else:
+            return None
 
 if __name__ == '__main__':
     # com = 'govo'
@@ -788,10 +802,10 @@ if __name__ == '__main__':
     fuction_type, start_date = 'update_permission_mkt_app' , '2024-06-01'
 
     for com in ['govo', 'jacat', 'fidra']:
-        query, list_dataset, row_level_security_id_query_condition, table_id_query_condition, company_name = handle_user_input(fuction_type=fuction_type, company_name=com)
+        bigquery_object_query, list_dataset, row_level_security_id_query_condition, table_id_query_condition, company_name = handle_user_input(fuction_type=fuction_type, company_name=com)
 
         bg = Bigquery()
-        list_object = bg.get_object_from_bigquery(query=query, start_date=start_date)
+        list_object = bg.get_object_from_bigquery(query=bigquery_object_query, start_date=start_date)
 
     session = Superset(
         base_url= os.getenv('SUPERSET_BASE_URL'),
@@ -800,6 +814,6 @@ if __name__ == '__main__':
     )
     # session.create_role(list_object = list_object, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
     # session.update_table_all_row_level_security(tables_schema=row_level_security_id_query_condition, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
-    session.delete_roles()
-    # session.update_users_app_permission(objects = list_object, company_name = company_name)
+    # session.delete_roles()
+    # session.update_users_app_permission(objects = list_object, company_name = company_name, bigquery_connection= bg)
         
