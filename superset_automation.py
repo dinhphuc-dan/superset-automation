@@ -732,7 +732,7 @@ class Superset():
             mkt_and_old_role_remain = {}
             old_role_id_remain = []
             for i in zip(mkt['old_role_name'].split(','), mkt['old_role_id'].split(',')):
-                if (company_name.lower() + '_all_users') not in i[0].lower() and (company_name.lower() + '_mkt') not in i[0].lower():
+                if ('auto_' + company_name.lower() + '_all_users') not in i[0].lower() and ('auto_' + company_name.lower() + '_mkt') not in i[0].lower():
                     old_role_id_remain.append(int(i[1]))
             mkt_and_old_role_remain.update({'marketer_name': mkt['username'], 'old_role_id_remain': old_role_id_remain, 'user_id': mkt['user_id']})
             list_mkt_and_old_id_remain_distinct.append(mkt_and_old_role_remain)
