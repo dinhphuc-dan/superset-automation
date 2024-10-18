@@ -31,13 +31,14 @@ def handle_user_input(fuction_type, company_name):
     return necessary info for superset based on input
     """
     app_related_role = ["mkt", "all_users"]
+    pion_app_related_role = ["mkt"]
     performance_related_role = ["mkt"]
 
     if fuction_type == "app_related_role":
         company_name = company_name
         bigquery_table_env = f"{company_name.upper()}_APP_TABLE_ID"
         bigquery_table_id = os.getenv(bigquery_table_env)
-        if company_name.lower() == "govo":
+        if company_name.lower() in ("govo", "pion"):
             bigquery_object_query = (
                 f" SELECT "
                 f" concat(app_name, '_', lower(platform)) as object_name, "
@@ -57,7 +58,11 @@ def handle_user_input(fuction_type, company_name):
                 f" FROM `{bigquery_table_id}` "
                 f" WHERE end_date is null "
             )
-        list_dataset = [company_name + "_" + i for i in app_related_role]
+        list_dataset = (
+            [company_name + "_" + i for i in pion_app_related_role]
+            if company_name.lower() == "pion"
+            else [company_name + "_" + i for i in app_related_role]
+        )
         table_id_query_condition = None
         row_level_security_id_query_condition = list_dataset[0]
 
@@ -914,14 +919,14 @@ class Bigquery:
 
 
 if __name__ == "__main__":
-    com = "govo"
+    # com = "govo"
     # com = 'jacat'
     # com = 'fidra'
-    # com = 'pion'
+    com = "pion"
 
-    # fuction_type, start_date = 'app_related_role', '2024-06-01'
+    fuction_type, start_date = "app_related_role", "2024-10-01"
     # fuction_type, start_date = 'mkt_performance_related_role' , None
-    fuction_type, start_date = "update_permission_mkt_app", None
+    # fuction_type, start_date = "update_permission_mkt_app", None
 
     # for com in ['govo', 'jacat', 'fidra']:
     (
@@ -942,9 +947,13 @@ if __name__ == "__main__":
         username=os.getenv("SUPERSET_USERNAME"),
         password=os.getenv("SUPERSET_PASSWORD"),
     )
-    # session.create_role(list_object = list_object, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
+    session.create_role(
+        list_object=list_object,
+        list_dataset=list_dataset,
+        table_id_query_condition=table_id_query_condition,
+    )
     # session.update_table_all_row_level_security(tables_schema=row_level_security_id_query_condition, list_dataset=list_dataset, table_id_query_condition=table_id_query_condition)
     # session.delete_roles()
-    session.update_users_app_permission(
-        objects=list_object, company_name=company_name, bigquery_connection=bg
-    )
+    # session.update_users_app_permission(
+    #     objects=list_object, company_name=company_name, bigquery_connection=bg
+    # )
